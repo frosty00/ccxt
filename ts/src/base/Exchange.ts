@@ -7693,7 +7693,3 @@ export default class Exchange {
         }
     }
 }
-
-export {
-    Exchange,
-};

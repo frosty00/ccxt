@@ -6,7 +6,7 @@
 // -------------------------------------------------------------------------------
 
 import { implicitReturnType } from '../base/types.js';
-import { Exchange as _Exchange } from '../base/Exchange.js';
+import _Exchange from '../base/Exchange.js';
 
 interface Exchange {
     publicGetApiV1ExchangeInfo (params?: {}): Promise<implicitReturnType>;

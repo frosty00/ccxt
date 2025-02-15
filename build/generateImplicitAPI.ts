@@ -286,7 +286,7 @@ function createTypescriptHeader(instance, parent){
     const exchange = instance.id;
     const importType = 'import { implicitReturnType } from \'../base/types.js\';'
     const importParent = (parent === 'Exchange') ?
-        `import { Exchange as _Exchange } from '../base/Exchange.js';` :
+        `import _Exchange from '../base/Exchange.js';` :
         `import _${parent} from '../${parent}.js';`
     const typescriptHeader = `interface ${parent} {`
     const typescriptFooter = `abstract class ${parent} extends _${parent} {}\n\nexport default ${parent}` // hotswap later

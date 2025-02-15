@@ -29,7 +29,7 @@ SOFTWARE.
 
 /* eslint-disable */
 
-import { Exchange }  from './src/base/Exchange.js'
+import Exchange from './src/base/Exchange.js'
 import { Precise }   from './src/base/Precise.js'
 import * as functions from './src/base/functions.js'
 import * as errors   from './src/base/errors.js'
