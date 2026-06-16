@@ -164,6 +164,7 @@ class NewTranspiler {
     transpiler!: Transpiler;
     pythonStandardLibraries;
     oldTranspiler = new OldTranspiler();
+    piscinaPool: Piscina | null = null;
 
     constructor() {
 
@@ -1061,21 +1062,22 @@ class NewTranspiler {
 
     async webworkerTranspile(allFiles: any[], parserConfig: any) {
 
-        // create worker
-        const piscina = new Piscina({
-            filename: resolve(__dirname, 'java-worker.js'),
-            maxThreads: 16,
-        });
+        // Reuse pool across calls
+        if (!this.piscinaPool) {
+            this.piscinaPool = new Piscina({
+                filename: resolve(__dirname, 'java-worker.js'),
+                maxThreads: 16,
+            });
+        }
 
         const chunkSize = 20;
         const promises: any = [];
         const now = Date.now();
         for (let i = 0; i < allFiles.length; i += chunkSize) {
             const chunk = allFiles.slice(i, i + chunkSize);
-            promises.push(piscina.run({ transpilerConfig: parserConfig, files: chunk }));
+            promises.push(this.piscinaPool.run({ transpilerConfig: parserConfig, files: chunk }));
         }
         const workerResult = await Promise.all(promises);
-        await piscina.destroy();
         const elapsed = Date.now() - now;
         log.green('[ast-transpiler] Transpiled', allFiles.length, 'files in', elapsed, 'ms');
 
@@ -1099,6 +1101,17 @@ class NewTranspiler {
         // Legacy format: array of results
         const flatResult = workerResult.flat();
         return flatResult;
+    }
+
+    async destroyPool() {
+        if (this.piscinaPool) {
+            try {
+                await this.piscinaPool.destroy();
+            } catch (e) {
+                // Ignore errors during cleanup
+            }
+            this.piscinaPool = null;
+        }
     }
 
     async transpileDerivedExchangeFiles(jsFolder: string, options: any, pattern = '.ts', force = false, child = false, ws = false) {

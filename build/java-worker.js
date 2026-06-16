@@ -52,6 +52,11 @@ function transformLeadingComment(comment) {
 }
 
 export default async ({transpilerConfig, files}) => {
+    // Clear comments from previous runs (for pool reuse)
+    for (const key in csharpComments) {
+        delete csharpComments[key];
+    }
+
     const transpiler = new Transpiler(transpilerConfig);
     transpiler.csharpTranspiler.transformLeadingComment = transformLeadingComment;
 
