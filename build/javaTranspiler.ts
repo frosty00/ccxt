@@ -34,7 +34,6 @@ function overwriteFileAndFolder(path: string, content: string) {
         checkCreateFolder(path);
     }
     overwriteFile(path, content);
-    fs.writeFileSync(path, content);
 }
 
 // User-facing typed-wrapper methods that ship BOTH a typed sync overload
