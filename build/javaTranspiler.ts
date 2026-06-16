@@ -1063,7 +1063,8 @@ class NewTranspiler {
 
         // create worker
         const piscina = new Piscina({
-            filename: resolve(__dirname, 'java-worker.js')
+            filename: resolve(__dirname, 'java-worker.js'),
+            maxThreads: 16,
         });
 
         const chunkSize = 20;
@@ -1074,8 +1075,28 @@ class NewTranspiler {
             promises.push(piscina.run({ transpilerConfig: parserConfig, files: chunk }));
         }
         const workerResult = await Promise.all(promises);
+        await piscina.destroy();
         const elapsed = Date.now() - now;
         log.green('[ast-transpiler] Transpiled', allFiles.length, 'files in', elapsed, 'ms');
+
+        // Handle new format: { results: [...], comments: {...} }
+        if (workerResult[0] && workerResult[0].results) {
+            const flatResults = workerResult.flatMap((r: any) => r.results);
+            // Merge comments from all workers into global csharpComments
+            for (const workerRes of workerResult) {
+                if (workerRes.comments) {
+                    for (const [exchangeName, methods] of Object.entries(workerRes.comments)) {
+                        if (!csharpComments[exchangeName]) {
+                            csharpComments[exchangeName] = {};
+                        }
+                        Object.assign(csharpComments[exchangeName], methods);
+                    }
+                }
+            }
+            return flatResults;
+        }
+
+        // Legacy format: array of results
         const flatResult = workerResult.flat();
         return flatResult;
     }
@@ -1102,9 +1123,8 @@ class NewTranspiler {
 
         // transpile using webworker
         const allFilesPath = exchanges.map((file: string) => jsFolder + file);
-        // const transpiledFiles =  await this.webworkerTranspile(allFilesPath, this.getTranspilerConfig());
-        log.blue('[java] Transpiling [', exchanges.join(', '), ']');
-        const transpiledFiles = allFilesPath.map((file: string) => this.transpiler.transpileJavaByPath(file));
+        const transpiledFiles = await this.webworkerTranspile(allFilesPath, this.getTranspilerConfig());
+        log.blue('[java] Transpiled [', exchanges.join(', '), ']');
 
         if (!ws) {
             for (let i = 0; i < transpiledFiles.length; i++) {
